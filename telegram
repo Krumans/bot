@@ -1,0 +1,234 @@
+import telebot
+from telebot import types
+
+token='6715053477:AAF470Ze77VsSj0kNHF8BSctuD8-DPG5-Aw'
+bot=telebot.TeleBot(token)
+
+referrals = {}
+balances = {}
+profiles = {}
+likes = {}
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button1 = types.KeyboardButton('Моя команда')
+    button2 = types.KeyboardButton('Создать профиль')
+    button3 = types.KeyboardButton('Моя анкета')
+    button4 = types.KeyboardButton('Знакомства')
+    markup.row(button1, button2, button3, button4)
+    bot.send_message(message.chat.id, 'Добро пожаловать!', reply_markup=markup)
+
+@bot.message_handler(content_types=['text'])
+def handle_text(message):
+    if message.text == 'Моя команда':
+        pass  # Здесь должен быть ваш существующий код
+    elif message.text == 'Создать профиль':
+        create_profile(message)
+    elif message.text == 'Моя анкета':
+        show_profile(message)
+    elif message.text == 'Знакомства':
+        show_profiles(message)
+
+def create_profile(message):
+    msg = bot.send_message(message.chat.id, "Пожалуйста, введите ваше имя.")
+    bot.register_next_step_handler(msg, process_name_step)
+
+def process_name_step(message):
+    try:
+        name = message.text
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id] = {'name': name}
+        msg = bot.send_message(message.chat.id, 'Спасибо, {}! Теперь введите ваш возраст.'.format(name))
+        bot.register_next_step_handler(msg, process_age_step)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+def process_age_step(message):
+    try:
+        age = message.text
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id]['age'] = age
+        msg = bot.send_message(message.chat.id, 'Отлично! Теперь отправьте свою фотографию.')
+        bot.register_next_step_handler(msg, process_photo_step)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+def process_photo_step(message):
+    try:
+        photo = message.photo[-1].file_id if message.photo else None
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id]['photo'] = photo
+        msg = bot.send_message(message.chat.id, 'Спасибо за фотографию! Теперь расскажите немного о себе.')
+        bot.register_next_step_handler(msg, process_bio_step)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+def process_bio_step(message):
+    try:
+        bio = message.text
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id]['bio'] = bio
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Мужской', callback_data='Мужской'),
+                   types.InlineKeyboardButton('Женский', callback_data='Женский'),
+                   types.InlineKeyboardButton('Другое', callback_data='Другое'))
+        bot.send_message(message.chat.id, 'Отлично! Теперь выберите свой пол.', reply_markup=markup)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+@bot.callback_query_handler(func=lambda call: call.data in ['Мужской', 'Женский', 'Другое'])
+def process_gender_step(call):
+    try:
+        gender = call.data
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        profiles[user_id]['gender'] = gender
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Гетеро', callback_data='Гетеро'),
+                   types.InlineKeyboardButton('Гей', callback_data='Гей'),
+                   types.InlineKeyboardButton('Лесби', callback_data='Лесби'),
+                   types.InlineKeyboardButton('Би', callback_data='Би'),
+                   types.InlineKeyboardButton('Пансексуал', callback_data='Пансексуал'),
+                   types.InlineKeyboardButton('Асексуал', callback_data='Асексуал'),
+                   types.InlineKeyboardButton('Другое', callback_data='Другое'))
+        bot.edit_message_text(chat_id=chat_id, message_id=call.message.message_id, text='Отлично! Теперь выберите свою ориентацию.', reply_markup=markup)
+    except Exception as e:
+        bot.send_message(chat_id, 'oooops: {}'.format(e))
+
+@bot.callback_query_handler(func=lambda call: call.data in ['Гетеро', 'Гей', 'Лесби', 'Би', 'Пансексуал', 'Асексуал', 'Другое'])
+def process_orientation_step(call):
+    try:
+        orientation = call.data
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        profiles[user_id]['orientation'] = orientation
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Овен', callback_data='Овен'),
+                   types.InlineKeyboardButton('Телец', callback_data='Телец'),
+                   types.InlineKeyboardButton('Близнецы', callback_data='Близнецы'),
+                   types.InlineKeyboardButton('Рак', callback_data='Рак'),
+                   types.InlineKeyboardButton('Лев', callback_data='Лев'),
+                   types.InlineKeyboardButton('Дева', callback_data='Дева'),
+                   types.InlineKeyboardButton('Весы', callback_data='Весы'),
+                   types.InlineKeyboardButton('Скорпион', callback_data='Скорпион'),
+                   types.InlineKeyboardButton('Стрелец', callback_data='Стрелец'),
+                   types.InlineKeyboardButton('Козерог', callback_data='Козерог'),
+                   types.InlineKeyboardButton('Водолей', callback_data='Водолей'),
+                   types.InlineKeyboardButton('Рыбы', callback_data='Рыбы'))
+        bot.edit_message_text(chat_id=chat_id, message_id=call.message.message_id, text='Отлично! Теперь выберите свой знак зодиака.', reply_markup=markup)
+    except Exception as e:
+        bot.send_message(chat_id, 'oooops: {}'.format(e))
+
+@bot.callback_query_handler(func=lambda call: call.data in ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'])
+def process_zodiac_step(call):
+    try:
+        zodiac = call.data
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        profiles[user_id]['zodiac'] = zodiac
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Дружба', callback_data='Дружба'),
+                   types.InlineKeyboardButton('Найти любовь', callback_data='Найти любовь'),
+                   types.InlineKeyboardButton('Отношения без обязательств', callback_data='Отношения без обязательств'),
+                   types.InlineKeyboardButton('Общение', callback_data='Общение'))
+        bot.edit_message_text(chat_id=chat_id, message_id=call.message.message_id, text='Отлично! Теперь выберите цель знакомства.', reply_markup=markup)
+    except Exception as e:
+        bot.send_message(chat_id, 'oooops: {}'.format(e))
+
+@bot.callback_query_handler(func=lambda call: call.data in ['Дружба', 'Найти любовь', 'Отношения без обязательств', 'Общение'])
+def process_goal_step(call):
+    try:
+        goal = call.data
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        profiles[user_id]['goal'] = goal
+        msg = bot.send_message(chat_id, 'Отлично! Теперь введите страну, в которой вы проживаете.')
+        bot.register_next_step_handler(msg, process_country_step)
+    except Exception as e:
+        bot.send_message(chat_id, 'oooops: {}'.format(e))
+
+def process_country_step(message):
+    try:
+        country = message.text
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id]['country'] = country
+        msg = bot.send_message(chat_id, 'Отлично! Теперь введите город, в котором вы проживаете.')
+        bot.register_next_step_handler(msg, process_city_step)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+def process_city_step(message):
+    try:
+        city = message.text
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        profiles[user_id]['city'] = city
+        msg = bot.send_message(message.chat.id, 'Отлично! Теперь прикрепите свою геопозицию или введите "Пропустить", чтобы пропустить этот шаг.')
+        bot.register_next_step_handler(msg, process_location_step)
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+@bot.message_handler(content_types=['location', 'text'])
+def process_location_step(message):
+    try:
+        if message.content_type == 'location':
+            location = message.location
+            profiles[message.from_user.id]['location'] = location
+        else:
+            profiles[message.from_user.id]['location'] = 'Не указано'
+        bot.send_message(message.chat.id, 'Ваш профиль успешно создан!')
+    except Exception as e:
+        bot.reply_to(message, 'oooops: {}'.format(e))
+
+def show_profile(message):
+    user_id = message.from_user.id
+    if user_id in profiles:
+        profile = profiles[user_id]
+        response = f"Имя: {profile['name']}\nВозраст: {profile['age']}\nСтрана: {profile['country']}\nГород: {profile['city']}\nОриентация: {profile['orientation']}\nПол: {profile['gender']}\nЗнак зодиака: {profile['zodiac']}\nЦель знакомства: {profile['goal']}"
+        bot.send_photo(message.chat.id, profile['photo'], caption=response)
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Изменить анкету', callback_data='edit_profile'))
+        bot.send_message(message.chat.id, 'Вы можете изменить свою анкету, нажав на кнопку ниже.', reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, "Профиль не найден. Пожалуйста, создайте профиль.")
+
+@bot.callback_query_handler(func=lambda call: call.data == 'edit_profile')
+def edit_profile(call):
+    create_profile(call.message)
+
+def show_profiles(message):
+    user_id = message.from_user.id
+    user_profile = profiles.get(user_id)
+    if user_profile:
+        for profile_id, profile in profiles.items():
+            if profile_id != user_id and profile['city'] == user_profile['city'] and profile['country'] == user_profile['country']:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton('❤️', callback_data=f'like_{profile_id}'),
+                           types.InlineKeyboardButton('👎', callback_data=f'dislike_{profile_id}'))
+                bot.send_photo(message.chat.id, profile['photo'], caption=f"{profile['name']}, {profile['age']}", reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, "Пожалуйста, создайте профиль.")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('like_'))
+def like_profile(call):
+    user_id = call.from_user.id
+    liked_user_id = int(call.data.split('_')[1])
+    likes.setdefault(user_id, []).append(liked_user_id)
+    if liked_user_id in likes and user_id in likes[liked_user_id]:
+        bot.send_message(user_id, f"Вы взаимно лайкнули профиль пользователя {liked_user_id}!")
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Познакомиться', url=f't.me/c/{liked_user_id}'))
+        bot.send_photo(user_id, profiles[liked_user_id]['photo'], caption=f"{profiles[liked_user_id]['name']}, {profiles[liked_user_id]['age']}", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('dislike_'))
+def dislike_profile(call):
+    # Здесь вы можете обработать действие "не нравится", если это необходимо
+    pass
+
+bot.polling()
