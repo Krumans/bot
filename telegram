@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 
-token='6715053477:AAF470Ze77VsSj0kNHF8BSctuD8-DPG5-Aw'
+token=''
 bot=telebot.TeleBot(token)
 
 referrals = {}
